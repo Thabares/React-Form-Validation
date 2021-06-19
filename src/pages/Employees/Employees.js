@@ -1,18 +1,82 @@
-import React from "react";
-import EmployeeForm from "./EmployeeForm";
-import PeopleOutlineTwoToneIcon from "@material-ui/icons/PeopleOutlineTwoTone";
-import PageHeader from "../../components/PageHeader";
-import { makeStyles, Paper } from "@material-ui/core";
+import React, { useState } from 'react';
+import EmployeeForm from './EmployeeForm';
+import PeopleOutlineTwoToneIcon from '@material-ui/icons/PeopleOutlineTwoTone';
+import PageHeader from '../../components/PageHeader';
+import useTable from '../../components/useTable';
+import {
+  makeStyles,
+  Paper,
+  TableBody,
+  TableRow,
+  TableCell,
+  Toolbar,
+} from '@material-ui/core';
+import * as employeeService from '../../services/employeeService';
+import Controls from '../../components/controls/Controls';
+import { InputAdornment } from '@material-ui/core';
+import { Search } from '@material-ui/icons';
 
 const useStyles = makeStyles((theme) => ({
   pageContent: {
     margin: theme.spacing(5),
     padding: theme.spacing(3),
   },
+  searchInput: {
+    width: '75%',
+  },
 }));
+
+const headCells = [
+  {
+    id: 'fullName',
+    label: 'Employee Name',
+  },
+  {
+    id: 'email',
+    label: 'Email Address (Personal)',
+  },
+  {
+    id: 'mobile',
+    label: 'Mobile Number',
+  },
+  {
+    id: 'department',
+    label: 'Department',
+    disableSort: true,
+  },
+];
 
 export default function Employees() {
   const classes = useStyles();
+
+  const [records, setRecords] = useState(employeeService.getAllEmployees());
+  const [filterFn, setFilterFn] = useState({
+    fn: (items) => {
+      return items;
+    },
+  });
+  const {
+    TblHeader,
+    TblContainer,
+    TblPagination,
+    recordsAfterPagingAndSorting,
+  } = useTable(records, headCells, filterFn);
+
+  const handleSearch = (event) => {
+    let target = event.target;
+
+    setFilterFn({
+      fn: (items) => {
+        if (target.value == '') {
+          return items;
+        } else {
+          return items.filter((x) =>
+            x.fullName.toLowerCase().includes(target.value.toLowerCase())
+          );
+        }
+      },
+    });
+  };
   return (
     <>
       <PageHeader
@@ -21,7 +85,36 @@ export default function Employees() {
         icon={<PeopleOutlineTwoToneIcon fontSize="large" />}
       />
       <Paper className={classes.pageContent}>
-        <EmployeeForm />
+        <Toolbar>
+          <Controls.Input
+            className={classes.searchInput}
+            label="Search Employees"
+            onChange={handleSearch}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Toolbar>
+        <TblContainer>
+          <TblHeader />
+          <TableBody>
+            {recordsAfterPagingAndSorting().map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.fullName}</TableCell>
+                <TableCell>{item.email}</TableCell>
+                <TableCell>{item.mobile}</TableCell>
+                <TableCell>{item.department}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </TblContainer>
+        <TblPagination />
+
+        {/* <EmployeeForm /> */}
       </Paper>
     </>
   );
