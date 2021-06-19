@@ -9,7 +9,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Toolbar,
 } from '@material-ui/core';
 import * as employeeService from '../../services/employeeService';
 import Controls from '../../components/controls/Controls';
@@ -19,11 +18,13 @@ import AddIcon from '@material-ui/icons/Add';
 import CloseIcon from '@material-ui/icons/Close';
 import EditIcon from '@material-ui/icons/Edit';
 import Popup from '../../components/Popup';
+import Notification from '../../components/Notification';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const useStyles = makeStyles((theme) => ({
   pageContent: {
-    margin: theme.spacing(5),
-    padding: theme.spacing(3),
+    margin: theme.spacing(2),
+    padding: theme.spacing(1),
   },
   searchInput: {
     width: '75%',
@@ -60,6 +61,17 @@ export default function Employees() {
   const [records, setRecords] = useState(employeeService.getAllEmployees());
 
   const [recordForEdit, setRecordForEdit] = useState(null);
+  const [notify, setNotify] = useState({
+    isOpen: false,
+    message: '',
+    type: '',
+  });
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    subTitle: '',
+  });
   const [openPopup, setOpenPopup] = useState(false);
   const [filterFn, setFilterFn] = useState({
     fn: (items) => {
@@ -98,6 +110,11 @@ export default function Employees() {
     resetForm();
     setRecordForEdit(null);
     setOpenPopup(false);
+    setNotify({
+      isOpen: true,
+      message: 'Submitted Successfully',
+      type: 'success',
+    });
     setRecords(employeeService.getAllEmployees());
   };
 
@@ -106,39 +123,28 @@ export default function Employees() {
     setOpenPopup(true);
   };
 
+  const onDelete = (id) => {
+    setConfirmDialog({ ...confirmDialog, isOpen: false });
+    setNotify({
+      isOpen: true,
+      message: 'Deleted Successfully',
+      type: 'error',
+    });
+    employeeService.deleteEmployee(id);
+    setRecords(employeeService.getAllEmployees());
+  };
+
   return (
     <>
       <PageHeader
         title="New Employee"
         subTitle="Form Design with Validation"
         icon={<PeopleOutlineTwoToneIcon fontSize="large" />}
+        handleSearch={handleSearch}
+        setRecordForEdit={setRecordForEdit}
+        setOpenPopup={setOpenPopup}
       />
       <Paper className={classes.pageContent}>
-        <Toolbar>
-          <Controls.Input
-            className={classes.searchInput}
-            label="Search Employees"
-            onChange={handleSearch}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Controls.Button
-            className={classes.newButton}
-            text="Add New"
-            onClick={() => {
-              setRecordForEdit(null);
-              setOpenPopup(true);
-            }}
-            variant="outlined"
-            startIcon={<AddIcon />}
-          />
-        </Toolbar>
         <TblContainer>
           <TblHeader />
           <TableBody>
@@ -157,7 +163,20 @@ export default function Employees() {
                   >
                     <EditIcon fontSize="small" />
                   </Controls.ActionButton>
-                  <Controls.ActionButton color="secondary">
+                  <Controls.ActionButton
+                    color="secondary"
+                    onClick={() => {
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: 'Are you sure you want to delete this record?',
+                        subTitle: "You can't undo this operation",
+                        onConfirm: () => {
+                          onDelete(item.id);
+                        },
+                      });
+                      // onDelete(item.id);
+                    }}
+                  >
                     <CloseIcon fontSize="small" />
                   </Controls.ActionButton>
                 </TableCell>
@@ -175,6 +194,12 @@ export default function Employees() {
         >
           <EmployeeForm addOrEdit={addOrEdit} recordForEdit={recordForEdit} />
         </Popup>
+
+        <Notification notify={notify} setNotify={setNotify} />
+        <ConfirmDialog
+          confirmDialog={confirmDialog}
+          setConfirmDialog={setConfirmDialog}
+        />
       </Paper>
     </>
   );
